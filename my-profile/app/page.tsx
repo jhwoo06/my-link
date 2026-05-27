@@ -114,7 +114,7 @@ export default function Home() {
               배우는 중
             </div>
             <div className="px-5 py-3 bg-neo-pink text-black font-bold border-4 border-black shadow-[4px_4px_0_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#000] transition-all cursor-default">
-              🎓 컴퓨터공학 전공
+              🎓 한양대학교 의과대학 의예과
             </div>
             <div className="px-5 py-3 bg-neo-green text-black font-bold border-4 border-black shadow-[4px_4px_0_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#000] transition-all cursor-default">
               💻 React & Next.js
