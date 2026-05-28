@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Pencil, Trash2, Link as LinkIcon, Save, X } from "lucide-react";
+import { Pencil, Trash2, Link as LinkIcon, Save, X, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { linkSchema, LinkFormValues } from "@/lib/schemas";
@@ -106,7 +106,8 @@ export function LinkCard({ link }: LinkCardProps) {
             <X className="mr-2 h-4 w-4" /> 취소
           </Button>
           <Button disabled={isSubmitting} type="submit" className="brutal-border bg-primary text-primary-foreground rounded-none font-bold">
-            <Save className="mr-2 h-4 w-4" /> {isSubmitting ? "저장 중..." : "저장"}
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            저장
           </Button>
         </div>
       </form>
@@ -187,7 +188,8 @@ export function LinkCard({ link }: LinkCardProps) {
               취소
             </Button>
             <Button disabled={isDeleting} type="button" variant="destructive" className="brutal-border brutal-shadow rounded-none text-lg font-bold h-12 bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDelete}>
-              <Trash2 className="mr-2 h-5 w-5" /> {isDeleting ? "삭제 중..." : "삭제하기"}
+              {isDeleting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Trash2 className="mr-2 h-5 w-5" />}
+              삭제하기
             </Button>
           </DialogFooter>
         </DialogContent>
