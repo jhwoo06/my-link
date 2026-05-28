@@ -145,11 +145,11 @@ export function LinkCard({ link }: LinkCardProps) {
       <div className="flex gap-2 shrink-0">
         <Button 
           onClick={(e) => {
-            e.preventDefault(); // 링크 이동 방지
+            e.preventDefault();
             setIsEditing(true);
           }}
           variant="outline" 
-          className="brutal-border h-10 w-10 p-0 rounded-none bg-background hover:bg-primary/20 transition-colors"
+          className="brutal-border brutal-shadow h-10 w-10 p-0 rounded-none bg-background hover:bg-secondary hover:text-secondary-foreground transition-all"
           title="수정"
         >
           <Pencil className="h-5 w-5" />
@@ -158,11 +158,11 @@ export function LinkCard({ link }: LinkCardProps) {
 
         <Button 
           onClick={(e) => {
-            e.preventDefault(); // 링크 이동 방지
+            e.preventDefault();
             setIsDeleteDialogOpen(true);
           }}
           variant="destructive" 
-          className="brutal-border h-10 w-10 p-0 rounded-none bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors"
+          className="brutal-border brutal-shadow h-10 w-10 p-0 rounded-none bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all"
           title="삭제"
         >
           <Trash2 className="h-5 w-5" />
