@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LinkItem } from "../data/links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +12,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Share, Pencil, Plus, Loader2, Save, X, ExternalLink, Copy, LogOut } from "lucide-react";
+import { Share, Plus, Loader2, ExternalLink, Copy, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -27,33 +26,33 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { db, auth } from "@/lib/firebase";
-import { collection, onSnapshot, addDoc, query, orderBy, serverTimestamp, getDoc, setDoc, updateDoc, doc } from "firebase/firestore";
+import { collection, query, getDocs, where } from "firebase/firestore";
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, User } from "firebase/auth";
 import { linkSchema, LinkFormValues } from "@/lib/schemas";
 import { LinkCard } from "@/components/link-card";
+import { useProfile } from "@/hooks/useProfile";
+import { useLinks } from "@/hooks/useLinks";
 
 export default function MyLinkProfile() {
   // 인증 상태
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-  // 프로필 상태
-  const [username, setUsername] = useState("");
-  const [bio, setBio] = useState("");
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
+  // TanStack Query 훅 사용
+  const { profile, isLoading: isProfileLoading, updateProfile, isUpdating: isSavingProfile } = useProfile(
+    user?.uid, 
+    user?.email, 
+    user?.displayName
+  );
+  const { links, isLoading: isLinksLoading, addLink, isAdding: isAddingLink } = useLinks(user?.uid);
 
-  // 프로필 편집 상태
-  const [isEditingUsername, setIsEditingUsername] = useState(false);
-  const [editUsernameText, setEditUsernameText] = useState("");
-  const [isSavingUsername, setIsSavingUsername] = useState(false);
-
-  const [isEditingBio, setIsEditingBio] = useState(false);
-  const [editBioText, setEditBioText] = useState("");
-  const [isSavingBio, setIsSavingBio] = useState(false);
-  
-  // 링크 상태
-  const [links, setLinks] = useState<LinkItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // 프로필 편집 모달 상태
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [editDisplayName, setEditDisplayName] = useState("");
+  const [editUsername, setEditUsername] = useState("");
+  const [editBio, setEditBio] = useState("");
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   
   // 모달 상태 관리
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -87,78 +86,11 @@ export default function MyLinkProfile() {
     }
   };
 
-  // Firestore 데이터베이스 연동 (Profile Read - 단회성 갱신형)
-  useEffect(() => {
-    if (!user) {
-      setUsername("");
-      setBio("");
-      setLinks([]);
-      return;
-    }
-
-    const fetchProfile = async () => {
-      setIsProfileLoading(true);
-      try {
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setUsername(data.username || (user.email ? user.email.split('@')[0] : (user.displayName || "이름 없음")));
-          setBio(data.bio || "한 줄 소개를 입력해주세요.");
-        } else {
-          // 문서가 없으면 초기값 세팅 (최초 로그인 시 이메일 닉네임 설정)
-          const initialUsername = user.email ? user.email.split('@')[0] : (user.displayName || "이름 없음");
-          await setDoc(docRef, {
-            username: initialUsername,
-            bio: "한 줄 소개를 입력해주세요."
-          });
-          setUsername(initialUsername);
-          setBio("한 줄 소개를 입력해주세요.");
-        }
-      } catch (error) {
-        console.error("Error fetching profile: ", error);
-        const fallbackUsername = user.email ? user.email.split('@')[0] : (user.displayName || "이름 없음");
-        setUsername(fallbackUsername);
-        setBio("한 줄 소개를 입력해주세요.");
-      } finally {
-        setIsProfileLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [user]);
-
-  // Firestore 실시간 데이터베이스 연동 (Links Read)
-  useEffect(() => {
-    if (!user) return;
-
-    setIsLoading(true);
-    const q = query(
-      collection(db, "users", user.uid, "links"), 
-      orderBy("createdAt", "desc")
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const linksData: LinkItem[] = [];
-      snapshot.forEach((doc) => {
-        linksData.push({ id: doc.id, ...doc.data() } as LinkItem);
-      });
-      setLinks(linksData);
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Error fetching links: ", error);
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [user]);
-
   // React Hook Form 설정
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     reset,
   } = useForm<LinkFormValues>({
     resolver: zodResolver(linkSchema),
@@ -168,26 +100,18 @@ export default function MyLinkProfile() {
     },
   });
 
-  // 링크 추가 로직 (Create - Firestore)
+  // 링크 추가 로직 (TanStack Query Mutation)
   const onSubmit = async (data: LinkFormValues) => {
     if (!user) return;
-    const urlObj = new URL(data.url.startsWith('http') ? data.url : `https://${data.url}`);
-    const domain = urlObj.hostname;
-    const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-    
     try {
-      await addDoc(collection(db, "users", user.uid, "links"), {
-        title: data.title,
-        url: urlObj.toString(),
-        icon: faviconUrl,
-        createdAt: serverTimestamp()
-      });
+      await addLink({ title: data.title, url: data.url });
       
       // 모달 닫기 및 폼 초기화
       reset();
       setIsDialogOpen(false);
+      toast.success("링크가 추가되었습니다.");
     } catch (error) {
-      console.error("Error adding document: ", error);
+      console.error("Error adding link: ", error);
       toast.error("링크 추가 중 오류가 발생했습니다.");
     }
   };
@@ -199,45 +123,86 @@ export default function MyLinkProfile() {
     }
   };
 
-  // 프로필 수정 로직 (Update - Firestore)
-  const handleSaveUsername = async () => {
-    if (!editUsernameText.trim() || !user) return;
-    setIsSavingUsername(true);
+  // 프로필 수정 모달 핸들러
+  const handleOpenProfileDialog = () => {
+    setEditDisplayName(profile?.displayName || "");
+    setEditUsername(profile?.username || "");
+    setEditBio(profile?.bio || "");
+    setUsernameAvailable(null); // 중복 확인 초기화
+    setIsProfileDialogOpen(true);
+  };
+
+  const handleCheckUsername = async () => {
+    if (!editUsername.trim() || !user) return;
+    
+    // 기존 아이디와 동일하면 바로 통과
+    if (editUsername === profile?.username) {
+      setUsernameAvailable(true);
+      toast.success("기존과 동일한 ID입니다.");
+      return;
+    }
+    
+    // 영문/숫자/언더바/하이픈 정규식 확인
+    const isValid = /^[a-zA-Z0-9_-]+$/.test(editUsername);
+    if (!isValid) {
+      toast.error("고유 ID는 영문, 숫자, 하이픈(-), 언더바(_)만 사용 가능합니다.");
+      setUsernameAvailable(false);
+      return;
+    }
+
+    setIsCheckingUsername(true);
     try {
-      await updateDoc(doc(db, "users", user.uid), {
-        username: editUsernameText
-      });
-      setUsername(editUsernameText);
-      setIsEditingUsername(false);
+      const q = query(collection(db, "users"), where("username", "==", editUsername));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        setUsernameAvailable(false);
+        toast.error("이미 사용 중인 ID입니다.");
+      } else {
+        setUsernameAvailable(true);
+        toast.success("사용 가능한 ID입니다!");
+      }
     } catch (error) {
-      console.error("Error updating username: ", error);
-      toast.error("이름 수정 중 오류가 발생했습니다.");
+      console.error("Error checking username: ", error);
+      toast.error("중복 확인 중 오류가 발생했습니다.");
     } finally {
-      setIsSavingUsername(false);
+      setIsCheckingUsername(false);
     }
   };
 
-  const handleSaveBio = async () => {
-    if (!editBioText.trim() || !user) return;
-    setIsSavingBio(true);
+  const handleSaveProfile = async () => {
+    if (!editDisplayName.trim() || !editUsername.trim() || !user) {
+      toast.error("이름과 고유 ID는 필수입니다.");
+      return;
+    }
+    
+    if (editUsername !== profile?.username && usernameAvailable !== true) {
+      toast.error("고유 ID 중복 확인을 진행해주세요.");
+      return;
+    }
+    if (editDisplayName === profile?.displayName && editUsername === profile?.username && editBio === profile?.bio) {
+      setIsProfileDialogOpen(false);
+      return;
+    }
+    
     try {
-      await updateDoc(doc(db, "users", user.uid), {
-        bio: editBioText
+      await updateProfile({
+        displayName: editDisplayName,
+        username: editUsername,
+        bio: editBio
       });
-      setBio(editBioText);
-      setIsEditingBio(false);
+      setIsProfileDialogOpen(false);
+      toast.success("프로필이 성공적으로 저장되었습니다.");
     } catch (error) {
-      console.error("Error updating bio: ", error);
-      toast.error("소개글 수정 중 오류가 발생했습니다.");
-    } finally {
-      setIsSavingBio(false);
+      console.error("Error updating profile: ", error);
+      toast.error("프로필 저장 중 오류가 발생했습니다.");
     }
   };
 
   // 링크 복사 핸들러
   const handleCopyLink = () => {
-    const handle = user?.email?.split('@')[0] || username;
-    const url = `${window.location.origin}/@${handle}`;
+    if (!profile?.username) return;
+    const url = `${window.location.origin}/@${profile.username}`;
     navigator.clipboard.writeText(url).then(() => {
       toast.success("내 페이지 링크가 클립보드에 복사되었습니다.");
     }).catch((err) => {
@@ -264,19 +229,19 @@ export default function MyLinkProfile() {
                   <img src={user.photoURL} alt="profile" className="w-9 h-9 rounded-full border border-gray-100 shadow-sm" />
                 ) : (
                   <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                    {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                    {profile?.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
                   </div>
                 )}
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 bg-white rounded-xl shadow-lg border border-gray-100 p-1">
                 <DropdownMenuGroup>
                   <DropdownMenuLabel className="flex flex-col gap-1 p-2">
-                    <span className="text-sm font-bold text-gray-900 truncate">{username || "사용자"}</span>
+                    <span className="text-sm font-bold text-gray-900 truncate">{profile?.displayName || "사용자"}</span>
                     <span className="text-xs font-medium text-gray-500 truncate">{user.email}</span>
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator className="bg-gray-100" />
-                <DropdownMenuItem className="cursor-pointer font-medium text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus:bg-gray-50 focus:text-gray-900 p-2 rounded-md transition-colors" onClick={() => window.open(`/@${user.email?.split('@')[0] || username}`, '_blank')}>
+                <DropdownMenuItem className="cursor-pointer font-medium text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus:bg-gray-50 focus:text-gray-900 p-2 rounded-md transition-colors" onClick={() => window.open(`/@${profile?.username || ""}`, '_blank')}>
                   <ExternalLink className="mr-2 h-4 w-4" />
                   <span>내 페이지 미리보기</span>
                 </DropdownMenuItem>
@@ -354,98 +319,104 @@ export default function MyLinkProfile() {
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-gray-400 text-3xl font-bold">{username.charAt(0).toUpperCase()}</span>
+                  <span className="text-gray-400 text-3xl font-bold">{profile?.displayName?.charAt(0)?.toUpperCase() || 'U'}</span>
                 )}
               </div>
 
-              {/* Username (Editable) */}
-              {isEditingUsername ? (
-                <div className="flex gap-2 items-center w-full max-w-sm">
-                  <Input 
-                    value={editUsernameText}
-                    onChange={(e) => setEditUsernameText(e.target.value)}
-                    className="rounded-md h-12 text-xl font-bold text-center focus-visible:ring-1 focus-visible:ring-primary border-gray-200 shadow-sm"
-                    placeholder="이름 입력"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSaveUsername();
-                      if (e.key === 'Escape') setIsEditingUsername(false);
-                    }}
-                  />
-                  <Button disabled={isSavingUsername} onClick={handleSaveUsername} className="rounded-md h-12 w-12 bg-primary text-white p-0 shrink-0 hover:bg-primary/90 shadow-sm">
-                    {isSavingUsername ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                  </Button>
-                  <Button disabled={isSavingUsername} onClick={() => setIsEditingUsername(false)} variant="outline" className="rounded-md h-12 w-12 p-0 shrink-0 bg-white border-gray-200 text-gray-500 hover:bg-gray-50 shadow-sm">
-                    <X className="h-5 w-5" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center">
-                  <div 
-                    onClick={() => {
-                      if(isProfileLoading) return;
-                      setEditUsernameText(username);
-                      setIsEditingUsername(true);
-                    }}
-                    className="group relative cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    {isProfileLoading ? (
-                      <div className="h-8 w-32 bg-gray-100 animate-pulse rounded-md"></div>
-                    ) : (
-                      <h1 className="text-2xl font-bold tracking-tight text-gray-900">{username}</h1>
-                    )}
-                    <Pencil className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 ml-1" />
-                  </div>
-                  {/* Handle (@username) */}
-                  {!isProfileLoading && user.email && (
-                    <p className="text-sm font-medium text-gray-400 mt-1">@{user.email.split('@')[0]}</p>
-                  )}
-                </div>
-              )}
-
-              {/* Bio (Editable) */}
-              {isEditingBio ? (
-                <div className="flex flex-col gap-2 w-full max-w-sm mt-3">
-                  <textarea 
-                    value={editBioText}
-                    onChange={(e) => setEditBioText(e.target.value)}
-                    className="flex min-h-[80px] w-full px-4 py-3 text-sm text-center font-medium rounded-md border border-gray-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary resize-none shadow-sm"
-                    placeholder="한 줄 소개를 입력해주세요."
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') setIsEditingBio(false);
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSaveBio();
-                      }
-                    }}
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button disabled={isSavingBio} onClick={() => setIsEditingBio(false)} variant="outline" className="rounded-md h-9 px-4 text-sm font-medium text-gray-600 border-gray-200 shadow-sm">
-                      취소
-                    </Button>
-                    <Button disabled={isSavingBio} onClick={handleSaveBio} className="rounded-md h-9 px-4 text-sm font-medium bg-primary text-white shadow-sm hover:bg-primary/90">
-                      {isSavingBio ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                      저장
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div 
-                  onClick={() => {
-                    if(isProfileLoading) return;
-                    setEditBioText(bio);
-                    setIsEditingBio(true);
-                  }}
-                  className="group relative cursor-pointer px-4 py-1 w-full max-w-sm mt-2 flex justify-center"
-                >
+              {/* Profile Info */}
+              <div className="flex flex-col items-center mt-2">
+                <div className="flex items-center gap-2">
                   {isProfileLoading ? (
-                    <div className="h-4 w-48 bg-gray-100 animate-pulse rounded-md"></div>
+                    <div className="h-8 w-32 bg-gray-100 animate-pulse rounded-md"></div>
                   ) : (
-                    <p className="text-sm font-medium text-gray-500 whitespace-pre-wrap">{bio}</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-gray-900">{profile?.displayName}</h1>
                   )}
-                  <Pencil className="absolute -right-1 top-1 h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400" />
                 </div>
+                {/* Handle (@username) */}
+                {!isProfileLoading && profile?.username && (
+                  <p className="text-sm font-medium text-gray-400 mt-1">@{profile?.username}</p>
+                )}
+              </div>
+
+              {/* Bio */}
+              <div className="px-4 w-full max-w-sm mt-2 flex justify-center">
+                {isProfileLoading ? (
+                  <div className="h-4 w-48 bg-gray-100 animate-pulse rounded-md"></div>
+                ) : (
+                  <p className="text-sm font-medium text-gray-500 whitespace-pre-wrap">{profile?.bio}</p>
+                )}
+              </div>
+
+              {/* Edit Profile Button & Dialog */}
+              {!isProfileLoading && (
+                <Dialog open={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen}>
+                  <Button variant="outline" className="mt-3 rounded-full px-5 h-9 shadow-sm border-gray-200 font-medium text-xs text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors" onClick={handleOpenProfileDialog}>
+                    프로필 편집
+                  </Button>
+                  <DialogContent className="bg-white rounded-xl shadow-xl border border-gray-100 sm:max-w-[420px]">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl font-bold tracking-tight text-center text-gray-900">프로필 수정</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-5 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="editDisplayName" className="text-sm font-bold text-gray-700">표시 이름 (Display Name)</Label>
+                        <Input 
+                          id="editDisplayName" 
+                          value={editDisplayName}
+                          onChange={(e) => setEditDisplayName(e.target.value)}
+                          placeholder="화면에 표시될 이름을 입력하세요" 
+                          className="rounded-md h-12 text-base border-gray-200 focus-visible:ring-1 focus-visible:ring-primary shadow-sm"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="editUsername" className="text-sm font-bold text-gray-700">고유 ID (Username)</Label>
+                        <div className="flex gap-2">
+                          <Input 
+                            id="editUsername" 
+                            value={editUsername}
+                            onChange={(e) => {
+                              setEditUsername(e.target.value.toLowerCase());
+                              setUsernameAvailable(null); // 수정 시 다시 확인 필요
+                            }}
+                            placeholder="영문 소문자, 숫자, 하이픈, 언더바" 
+                            className="rounded-md h-12 text-base border-gray-200 focus-visible:ring-1 focus-visible:ring-primary shadow-sm flex-1"
+                          />
+                          <Button 
+                            type="button" 
+                            variant="secondary" 
+                            onClick={handleCheckUsername} 
+                            disabled={isCheckingUsername || editUsername.trim() === ""}
+                            className="h-12 px-4 rounded-md font-bold text-sm shrink-0 bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          >
+                            {isCheckingUsername ? <Loader2 className="h-4 w-4 animate-spin" /> : "중복 확인"}
+                          </Button>
+                        </div>
+                        {usernameAvailable === true && <p className="text-xs text-green-600 font-medium ml-1">사용 가능한 ID입니다.</p>}
+                        {usernameAvailable === false && <p className="text-xs text-red-500 font-medium ml-1">이미 사용 중이거나 규칙에 어긋난 ID입니다.</p>}
+                        <p className="text-xs text-gray-400 ml-1">내 페이지 접속 주소로 사용됩니다. (예: /@{editUsername || 'id'})</p>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="editBio" className="text-sm font-bold text-gray-700">소개글</Label>
+                        <textarea 
+                          id="editBio" 
+                          value={editBio}
+                          onChange={(e) => setEditBio(e.target.value)}
+                          className="flex min-h-[80px] w-full px-4 py-3 text-base font-medium rounded-md border border-gray-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary resize-none shadow-sm"
+                          placeholder="자신을 소개하는 짧은 문장을 적어보세요."
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter className="mt-2 flex-col sm:flex-row gap-2 sm:space-x-2">
+                      <Button type="button" variant="outline" className="rounded-md text-base font-semibold h-12 border-gray-200 text-gray-600 hover:bg-gray-50 flex-1" onClick={() => setIsProfileDialogOpen(false)}>
+                        취소
+                      </Button>
+                      <Button onClick={handleSaveProfile} disabled={isSavingProfile} className="bg-primary text-white rounded-md text-base font-semibold h-12 hover:bg-primary/90 flex-1 m-0">
+                        {isSavingProfile ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+                        저장하기
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               )}
             </section>
 
@@ -454,14 +425,13 @@ export default function MyLinkProfile() {
               
               {/* Add Link Button */}
               <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
-                <DialogTrigger render={
-                  <Button 
-                    className="w-full h-14 bg-primary hover:bg-primary/90 text-white text-base font-semibold rounded-lg shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 mb-2"
-                  />
-                }>
-                    <Plus className="mr-2 h-5 w-5" strokeWidth={2.5} />
-                    새로운 링크 추가하기
-                </DialogTrigger>
+                <Button 
+                  onClick={() => setIsDialogOpen(true)}
+                  className="w-full h-14 bg-primary hover:bg-primary/90 text-white text-base font-semibold rounded-lg shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 mb-2"
+                >
+                  <Plus className="mr-2 h-5 w-5" strokeWidth={2.5} />
+                  새로운 링크 추가하기
+                </Button>
                 
                 {/* Dialog Content */}
                 <DialogContent className="bg-white rounded-xl shadow-xl border border-gray-100 sm:max-w-[400px]">
@@ -493,8 +463,8 @@ export default function MyLinkProfile() {
                       <Button type="button" variant="outline" className="rounded-md text-base font-semibold h-12 border-gray-200 text-gray-600 hover:bg-gray-50 flex-1" onClick={() => handleOpenChange(false)}>
                         취소
                       </Button>
-                      <Button disabled={isSubmitting} type="submit" className="bg-primary text-white rounded-md text-base font-semibold h-12 hover:bg-primary/90 flex-1 m-0">
-                        {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+                      <Button disabled={isAddingLink} type="submit" className="bg-primary text-white rounded-md text-base font-semibold h-12 hover:bg-primary/90 flex-1 m-0">
+                        {isAddingLink ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
                         추가하기
                       </Button>
                     </DialogFooter>
@@ -503,7 +473,7 @@ export default function MyLinkProfile() {
               </Dialog>
 
               {/* Links List */}
-              {isLoading ? (
+              {isLinksLoading ? (
                 <div className="w-full flex flex-col items-center justify-center py-10 gap-3 text-gray-400">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                   <p className="font-medium text-sm">링크를 불러오는 중...</p>

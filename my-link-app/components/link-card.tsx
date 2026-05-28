@@ -17,8 +17,7 @@ import { Pencil, Trash2, Link as LinkIcon, Save, X, Loader2 } from "lucide-react
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { linkSchema, LinkFormValues } from "@/lib/schemas";
-import { db } from "@/lib/firebase";
-import { doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
+import { useLinks } from "@/hooks/useLinks";
 
 interface LinkCardProps {
   link: LinkItem;
@@ -28,12 +27,13 @@ interface LinkCardProps {
 export function LinkCard({ link, uid }: LinkCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  
+  const { updateLink, deleteLink, isUpdating, isDeleting } = useLinks(uid);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     reset,
   } = useForm<LinkFormValues>({
     resolver: zodResolver(linkSchema),
@@ -44,34 +44,23 @@ export function LinkCard({ link, uid }: LinkCardProps) {
   });
 
   const onEditSubmit = async (data: LinkFormValues) => {
-    const urlObj = new URL(data.url.startsWith('http') ? data.url : `https://${data.url}`);
-    const domain = urlObj.hostname;
-    const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-    
     try {
-      await updateDoc(doc(db, "users", uid, "links", link.id), {
-        title: data.title,
-        url: urlObj.toString(),
-        icon: faviconUrl,
-        updatedAt: serverTimestamp(),
-      });
+      await updateLink({ linkId: link.id, title: data.title, url: data.url });
       setIsEditing(false);
     } catch (error) {
-      console.error("Error updating document: ", error);
+      console.error("Error updating link: ", error);
       toast.error("링크 수정 중 오류가 발생했습니다.");
     }
   };
 
   const handleDelete = async () => {
-    setIsDeleting(true);
     try {
-      await deleteDoc(doc(db, "users", uid, "links", link.id));
+      await deleteLink(link.id);
       setIsDeleteDialogOpen(false);
+      toast.success("링크가 삭제되었습니다.");
     } catch (error) {
-      console.error("Error deleting document: ", error);
+      console.error("Error deleting link: ", error);
       toast.error("링크 삭제 중 오류가 발생했습니다.");
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -108,8 +97,8 @@ export function LinkCard({ link, uid }: LinkCardProps) {
           <Button type="button" variant="outline" className="rounded-md h-10 border-gray-200 text-gray-600 hover:bg-gray-50 font-medium" onClick={cancelEditing}>
             취소
           </Button>
-          <Button disabled={isSubmitting} type="submit" className="rounded-md h-10 bg-primary text-white hover:bg-primary/90 font-medium">
-            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+          <Button disabled={isUpdating} type="submit" className="rounded-md h-10 bg-primary text-white hover:bg-primary/90 font-medium">
+            {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             저장
           </Button>
         </div>
