@@ -34,6 +34,7 @@ import { linkSchema, LinkFormValues } from "@/lib/schemas";
 import { LinkCard } from "@/components/link-card";
 import { useProfile } from "@/hooks/useProfile";
 import { useLinks } from "@/hooks/useLinks";
+import { LandingPage } from "@/components/landing-page";
 
 export default function MyLinkProfile() {
   const router = useRouter();
@@ -75,7 +76,12 @@ export default function MyLinkProfile() {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
+      // 사용자가 팝업을 닫았거나 중복 요청이 취소된 경우는 무시합니다.
+      if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
+        console.log("Login popup closed or cancelled.");
+        return;
+      }
       console.error("Login failed:", error);
       toast.error("로그인 중 오류가 발생했습니다.");
     }
@@ -288,34 +294,7 @@ export default function MyLinkProfile() {
             <p className="font-medium text-gray-400 text-sm">로딩 중...</p>
           </div>
         ) : !user ? (
-          // Landing View (Logged Out)
-          <section className="w-full flex flex-col items-center gap-6 text-center py-16 md:py-24 mt-4 md:mt-6">
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4 leading-tight text-gray-900">
-              Development in <span className="text-primary">One<br/>Link.</span>
-            </h1>
-            <p className="text-base md:text-lg font-medium text-gray-500 mb-8 max-w-md">
-              GitHub, 블로그, 포트폴리오까지.<br/>개발자를 위한 모든 링크를 한 페이지에 담아보세요.
-            </p>
-            <Button onClick={handleLogin} className="h-14 px-8 text-lg font-bold bg-primary text-white hover:bg-primary/90 rounded-md w-full md:w-auto shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-3">
-              <span className="font-black text-xl">G</span> Google로 시작하기
-            </Button>
-            
-            {/* Simple Mockup UI */}
-            <div className="mt-16 w-full max-w-sm bg-white p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-50 flex flex-col gap-4 mx-auto">
-               <div className="flex items-center gap-3 mb-2">
-                 <div className="w-10 h-10 rounded-full bg-gray-100"></div>
-                 <div className="w-24 h-4 rounded-md bg-gray-100"></div>
-               </div>
-               <div className="w-full h-12 bg-blue-50/50 rounded-xl flex items-center px-4 gap-3">
-                 <div className="w-6 h-6 rounded-full bg-blue-200"></div>
-                 <div className="w-32 h-3 rounded-md bg-blue-100"></div>
-               </div>
-               <div className="w-full h-12 bg-gray-50 rounded-xl flex items-center px-4 gap-3">
-                 <div className="w-6 h-6 rounded-full bg-gray-200"></div>
-                 <div className="w-40 h-3 rounded-md bg-gray-200"></div>
-               </div>
-            </div>
-          </section>
+          <LandingPage handleLogin={handleLogin} />
         ) : (
           // My Page View (Logged In)
           <>
