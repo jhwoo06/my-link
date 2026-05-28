@@ -13,9 +13,19 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Share, Pencil, Plus, Loader2, Save, X } from "lucide-react";
+import { Share, Pencil, Plus, Loader2, Save, X, ExternalLink, Copy, LogOut } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 import { db, auth } from "@/lib/firebase";
 import { collection, onSnapshot, addDoc, query, orderBy, serverTimestamp, getDoc, setDoc, updateDoc, doc } from "firebase/firestore";
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, User } from "firebase/auth";
@@ -64,7 +74,7 @@ export default function MyLinkProfile() {
       await signInWithPopup(auth, provider);
     } catch (error) {
       console.error("Login failed:", error);
-      alert("로그인 중 오류가 발생했습니다.");
+      toast.error("로그인 중 오류가 발생했습니다.");
     }
   };
 
@@ -178,7 +188,7 @@ export default function MyLinkProfile() {
       setIsDialogOpen(false);
     } catch (error) {
       console.error("Error adding document: ", error);
-      alert("링크 추가 중 오류가 발생했습니다.");
+      toast.error("링크 추가 중 오류가 발생했습니다.");
     }
   };
 
@@ -201,7 +211,7 @@ export default function MyLinkProfile() {
       setIsEditingUsername(false);
     } catch (error) {
       console.error("Error updating username: ", error);
-      alert("이름 수정 중 오류가 발생했습니다.");
+      toast.error("이름 수정 중 오류가 발생했습니다.");
     } finally {
       setIsSavingUsername(false);
     }
@@ -218,10 +228,22 @@ export default function MyLinkProfile() {
       setIsEditingBio(false);
     } catch (error) {
       console.error("Error updating bio: ", error);
-      alert("소개글 수정 중 오류가 발생했습니다.");
+      toast.error("소개글 수정 중 오류가 발생했습니다.");
     } finally {
       setIsSavingBio(false);
     }
+  };
+
+  // 링크 복사 핸들러
+  const handleCopyLink = () => {
+    const handle = user?.email?.split('@')[0] || username;
+    const url = `${window.location.origin}/@${handle}`;
+    navigator.clipboard.writeText(url).then(() => {
+      toast.success("내 페이지 링크가 클립보드에 복사되었습니다.");
+    }).catch((err) => {
+      console.error("Failed to copy URL: ", err);
+      toast.error("링크 복사에 실패했습니다.");
+    });
   };
 
   return (
@@ -236,18 +258,39 @@ export default function MyLinkProfile() {
           {isAuthLoading ? (
             <Loader2 className="animate-spin h-5 w-5 text-gray-400" />
           ) : user ? (
-            <div className="flex items-center gap-3">
-              <Button onClick={handleLogout} variant="ghost" className="text-sm font-medium text-gray-500 hover:text-gray-900 rounded-md">
-                로그아웃
-              </Button>
-              {user.photoURL ? (
-                <img src={user.photoURL} alt="profile" className="w-9 h-9 rounded-full border border-gray-100 shadow-sm" />
-              ) : (
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                  {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
-                </div>
-              )}
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer hover:opacity-80 transition-opacity">
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="profile" className="w-9 h-9 rounded-full border border-gray-100 shadow-sm" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                    {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-white rounded-xl shadow-lg border border-gray-100 p-1">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="flex flex-col gap-1 p-2">
+                    <span className="text-sm font-bold text-gray-900 truncate">{username || "사용자"}</span>
+                    <span className="text-xs font-medium text-gray-500 truncate">{user.email}</span>
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator className="bg-gray-100" />
+                <DropdownMenuItem className="cursor-pointer font-medium text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus:bg-gray-50 focus:text-gray-900 p-2 rounded-md transition-colors" onClick={() => window.open(`/@${user.email?.split('@')[0] || username}`, '_blank')}>
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  <span>내 페이지 미리보기</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer font-medium text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus:bg-gray-50 focus:text-gray-900 p-2 rounded-md transition-colors" onClick={handleCopyLink}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  <span>내 링크 복사</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-gray-100" />
+                <DropdownMenuItem className="cursor-pointer font-medium text-sm text-red-600 hover:bg-red-50 hover:text-red-700 focus:bg-red-50 focus:text-red-700 p-2 rounded-md transition-colors" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>로그아웃</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <Button onClick={handleLogin} className="rounded-md font-medium bg-primary text-white shadow-sm hover:bg-primary/90 px-6 h-10">
               로그인
@@ -446,11 +489,11 @@ export default function MyLinkProfile() {
                       />
                       {errors.url && <span className="text-red-500 font-medium text-xs">{errors.url.message}</span>}
                     </div>
-                    <DialogFooter className="mt-2">
-                      <Button type="button" variant="outline" className="rounded-md text-base font-semibold h-12 border-gray-200 text-gray-600 hover:bg-gray-50 w-full" onClick={() => handleOpenChange(false)}>
+                    <DialogFooter className="mt-2 flex-col sm:flex-row gap-2 sm:space-x-2">
+                      <Button type="button" variant="outline" className="rounded-md text-base font-semibold h-12 border-gray-200 text-gray-600 hover:bg-gray-50 flex-1" onClick={() => handleOpenChange(false)}>
                         취소
                       </Button>
-                      <Button disabled={isSubmitting} type="submit" className="bg-primary text-white rounded-md text-base font-semibold h-12 hover:bg-primary/90 w-full mt-2 sm:mt-0">
+                      <Button disabled={isSubmitting} type="submit" className="bg-primary text-white rounded-md text-base font-semibold h-12 hover:bg-primary/90 flex-1 m-0">
                         {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
                         추가하기
                       </Button>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "MyLink - 나만의 멀티링크 프로필",
@@ -17,7 +18,10 @@ export default function RootLayout({
       lang="ko"
       className={cn("h-full", "antialiased", "font-sans")}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground">{children}</body>
+      <body className="min-h-full flex flex-col bg-background text-foreground">
+        {children}
+        <Toaster position="top-center" />
+      </body>
     </html>
   );
 }

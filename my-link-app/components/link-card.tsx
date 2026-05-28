@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { LinkItem } from "@/data/links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +58,7 @@ export function LinkCard({ link, uid }: LinkCardProps) {
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating document: ", error);
-      alert("링크 수정 중 오류가 발생했습니다.");
+      toast.error("링크 수정 중 오류가 발생했습니다.");
     }
   };
 
@@ -68,7 +69,7 @@ export function LinkCard({ link, uid }: LinkCardProps) {
       setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error("Error deleting document: ", error);
-      alert("링크 삭제 중 오류가 발생했습니다.");
+      toast.error("링크 삭제 중 오류가 발생했습니다.");
     } finally {
       setIsDeleting(false);
     }
