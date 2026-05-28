@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. users 컬렉션 (프로필 정보)
+    // 참고: 실제 코드에서는 /users/{userId}/profile 이 아니라 /users/{userId} 경로 자체에 프로필을 저장하고 있습니다.
+    match /users/{userId} {
+      // 읽기: 퍼블릭 뷰어 및 username 중복 확인을 위해 누구나 읽기 가능
+      allow read: if true;
+      
+      // 쓰기(생성/수정/삭제): 로그인한 유저 본인만 가능
+      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      // ---------------------------------------------------------
+      // 💡 [추가 제안] 프로필 편집 시 놓치기 쉬운 보안 규칙 (옵션)
+      // ---------------------------------------------------------
+      // allow update: if request.auth != null && request.auth.uid == userId
+      //   // 수정하려는 데이터가 문자열인지 확인
+      //   && request.resource.data.username is string
+      //   // 너무 길거나 짧은 ID 방어 (예: 3자~20자)
+      //   && request.resource.data.username.size() >= 3
+      //   && request.resource.data.username.size() <= 20
+      //   // 고유 ID 정규식 체크 (영문, 숫자, 하이픈, 언더바)
+      //   && request.resource.data.username.matches('^[a-zA-Z0-9_-]+$');
+
+      
+      // 2. links 하위 컬렉션
+      match /links/{linkId} {
+        // 읽기: 퍼블릭 페이지 렌더링을 위해 누구나 읽기 가능
+        allow read: if true;
+        
+        // 쓰기(생성/수정/삭제): 부모 문서의 주인이 본인일 때만 가능
+        allow write: if request.auth != null && request.auth.uid == userId;
+        
+        // ---------------------------------------------------------
+        // 💡 [추가 제안] 링크 추가/수정 시 데이터 무결성 검증 (옵션)
+        // ---------------------------------------------------------
+        // allow create, update: if request.auth != null && request.auth.uid == userId
+        //   // 필수 필드가 모두 들어있는지 확인
+        //   && request.resource.data.keys().hasAll(['title', 'url'])
+        //   // url 필드가 올바른 URL 형태(http/https)로 시작하는지 검사
+        //   && request.resource.data.url.matches('^https?://.*');
+      }
+    }
+  }
+}
