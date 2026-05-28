@@ -13,24 +13,68 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Share, Pencil, Plus, Loader2 } from "lucide-react";
+import { Share, Pencil, Plus, Loader2, Save, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, addDoc, query, orderBy, serverTimestamp } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, query, orderBy, serverTimestamp, getDoc, setDoc, updateDoc, doc } from "firebase/firestore";
 import { linkSchema, LinkFormValues } from "@/lib/schemas";
 import { LinkCard } from "@/components/link-card";
 
 export default function MyLinkProfile() {
-  const [username, setUsername] = useState("우지헌");
-  const [bio, setBio] = useState("안녕하세요! 프론트엔드 개발자입니다.");
+  const [username, setUsername] = useState("");
+  const [bio, setBio] = useState("");
+  
+  // 프로필 로딩 상태
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
+
+  // 프로필 편집 상태
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [editUsernameText, setEditUsernameText] = useState("");
+  const [isSavingUsername, setIsSavingUsername] = useState(false);
+
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [editBioText, setEditBioText] = useState("");
+  const [isSavingBio, setIsSavingBio] = useState(false);
   const [links, setLinks] = useState<LinkItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // 모달 상태 관리
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Firestore 실시간 데이터베이스 연동 (Read)
+  // Firestore 데이터베이스 연동 (Profile Read - 단회성 갱신형)
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const docRef = doc(db, "users", "anonymous");
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setUsername(data.username || "우지헌");
+          setBio(data.bio || "안녕하세요! 프론트엔드 개발자입니다.");
+        } else {
+          // 문서가 없으면 초기값 세팅
+          await setDoc(docRef, {
+            username: "우지헌",
+            bio: "안녕하세요! 프론트엔드 개발자입니다."
+          });
+          setUsername("우지헌");
+          setBio("안녕하세요! 프론트엔드 개발자입니다.");
+        }
+      } catch (error) {
+        console.error("Error fetching profile: ", error);
+        setUsername("우지헌");
+        setBio("안녕하세요! 프론트엔드 개발자입니다.");
+      } finally {
+        setIsProfileLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  // Firestore 실시간 데이터베이스 연동 (Links Read)
   useEffect(() => {
     const q = query(
       collection(db, "users", "anonymous", "links"), 
@@ -97,6 +141,41 @@ export default function MyLinkProfile() {
     }
   };
 
+  // 프로필 수정 로직 (Update - Firestore)
+  const handleSaveUsername = async () => {
+    if (!editUsernameText.trim()) return;
+    setIsSavingUsername(true);
+    try {
+      await updateDoc(doc(db, "users", "anonymous"), {
+        username: editUsernameText
+      });
+      setUsername(editUsernameText);
+      setIsEditingUsername(false);
+    } catch (error) {
+      console.error("Error updating username: ", error);
+      alert("이름 수정 중 오류가 발생했습니다.");
+    } finally {
+      setIsSavingUsername(false);
+    }
+  };
+
+  const handleSaveBio = async () => {
+    if (!editBioText.trim()) return;
+    setIsSavingBio(true);
+    try {
+      await updateDoc(doc(db, "users", "anonymous"), {
+        bio: editBioText
+      });
+      setBio(editBioText);
+      setIsEditingBio(false);
+    } catch (error) {
+      console.error("Error updating bio: ", error);
+      alert("소개글 수정 중 오류가 발생했습니다.");
+    } finally {
+      setIsSavingBio(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-foreground pb-20">
       {/* Main Container */}
@@ -118,16 +197,89 @@ export default function MyLinkProfile() {
           </div>
           
           {/* Username (Editable) */}
-          <div className="group relative cursor-pointer border-b-4 border-transparent hover:border-foreground border-dashed pb-1 transition-all">
-            <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight">{username}</h1>
-            <Pencil className="absolute -right-8 top-1 md:top-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-foreground" />
-          </div>
+          {isEditingUsername ? (
+            <div className="flex gap-2 items-center w-full max-w-sm mt-2">
+              <Input 
+                value={editUsernameText}
+                onChange={(e) => setEditUsernameText(e.target.value)}
+                className="brutal-border rounded-none h-14 text-2xl font-black text-center focus-visible:ring-0 focus-visible:border-primary"
+                placeholder="이름 입력"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveUsername();
+                  if (e.key === 'Escape') setIsEditingUsername(false);
+                }}
+              />
+              <Button disabled={isSavingUsername} onClick={handleSaveUsername} className="brutal-border brutal-shadow rounded-none h-14 w-14 bg-primary text-primary-foreground p-0 shrink-0 hover:bg-primary/90">
+                {isSavingUsername ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />}
+              </Button>
+              <Button disabled={isSavingUsername} onClick={() => setIsEditingUsername(false)} variant="outline" className="brutal-border brutal-shadow rounded-none h-14 w-14 p-0 shrink-0 bg-card hover:bg-secondary">
+                <X className="h-6 w-6" />
+              </Button>
+            </div>
+          ) : (
+            <div 
+              onClick={() => {
+                if(isProfileLoading) return;
+                setEditUsernameText(username);
+                setIsEditingUsername(true);
+              }}
+              className="group relative cursor-pointer border-b-4 border-transparent hover:border-foreground border-dashed pb-1 transition-all mt-2"
+            >
+              {isProfileLoading ? (
+                <div className="h-12 w-48 bg-muted animate-pulse"></div>
+              ) : (
+                <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight">{username}</h1>
+              )}
+              <Pencil className="absolute -right-8 top-1 md:top-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-foreground" />
+            </div>
+          )}
 
           {/* Bio (Editable) */}
-          <div className="group relative cursor-pointer border-2 border-transparent hover:border-foreground border-dashed p-4 w-full max-w-md transition-all">
-            <p className="text-lg md:text-xl font-medium">{bio}</p>
-            <Pencil className="absolute -right-4 -top-4 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-foreground brutal-border p-1" />
-          </div>
+          {isEditingBio ? (
+            <div className="flex flex-col gap-2 w-full max-w-md mt-2">
+              <textarea 
+                value={editBioText}
+                onChange={(e) => setEditBioText(e.target.value)}
+                className="flex min-h-[100px] w-full px-4 py-3 text-lg font-medium brutal-border focus-visible:outline-none focus-visible:border-primary resize-none"
+                placeholder="간단한 소개글을 입력하세요"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setIsEditingBio(false);
+                  // Shift+Enter 허용, 그냥 Enter면 저장
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSaveBio();
+                  }
+                }}
+              />
+              <div className="flex justify-end gap-2">
+                <Button disabled={isSavingBio} onClick={() => setIsEditingBio(false)} variant="outline" className="brutal-border brutal-shadow rounded-none font-bold bg-card hover:bg-secondary">
+                  <X className="h-4 w-4 mr-2" /> 취소
+                </Button>
+                <Button disabled={isSavingBio} onClick={handleSaveBio} className="brutal-border brutal-shadow rounded-none font-bold bg-primary text-primary-foreground hover:bg-primary/90">
+                  {isSavingBio ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                  저장
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div 
+              onClick={() => {
+                if(isProfileLoading) return;
+                setEditBioText(bio);
+                setIsEditingBio(true);
+              }}
+              className="group relative cursor-pointer border-2 border-transparent hover:border-foreground border-dashed p-4 w-full max-w-md transition-all mt-2"
+            >
+              {isProfileLoading ? (
+                <div className="h-8 w-full bg-muted animate-pulse"></div>
+              ) : (
+                <p className="text-lg md:text-xl font-medium whitespace-pre-wrap">{bio}</p>
+              )}
+              <Pencil className="absolute -right-4 -top-4 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-foreground brutal-border p-1" />
+            </div>
+          )}
         </section>
 
         {/* Links Section */}

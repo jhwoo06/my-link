@@ -17,7 +17,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { linkSchema, LinkFormValues } from "@/lib/schemas";
 import { db } from "@/lib/firebase";
-import { doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 
 interface LinkCardProps {
   link: LinkItem;
@@ -51,6 +51,7 @@ export function LinkCard({ link }: LinkCardProps) {
         title: data.title,
         url: urlObj.toString(),
         icon: faviconUrl,
+        updatedAt: serverTimestamp(),
       });
       setIsEditing(false);
     } catch (error) {
