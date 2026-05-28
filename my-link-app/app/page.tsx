@@ -13,27 +13,13 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Share, Pencil, Trash2, Plus, Link as LinkIcon } from "lucide-react";
-import { z } from "zod";
+import { Share, Pencil, Plus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, addDoc, deleteDoc, doc, query, orderBy, serverTimestamp } from "firebase/firestore";
-
-// Zod 유효성 검사 스키마 정의
-const linkSchema = z.object({
-  title: z.string().min(1, { message: "링크 제목을 입력해주세요." }),
-  url: z.string().min(1, { message: "웹 주소(URL)를 입력해주세요." }).refine(val => {
-    try {
-      const urlObj = new URL(val.startsWith('http') ? val : `https://${val}`);
-      return urlObj.hostname.includes('.');
-    } catch {
-      return false;
-    }
-  }, { message: "올바른 웹 주소 형식이 아닙니다. (예: example.com)" })
-});
-
-type LinkFormValues = z.infer<typeof linkSchema>;
+import { collection, onSnapshot, addDoc, query, orderBy, serverTimestamp } from "firebase/firestore";
+import { linkSchema, LinkFormValues } from "@/lib/schemas";
+import { LinkCard } from "@/components/link-card";
 
 export default function MyLinkProfile() {
   const [username, setUsername] = useState("우지헌");
@@ -108,16 +94,6 @@ export default function MyLinkProfile() {
     setIsDialogOpen(open);
     if (!open) {
       reset(); // 모달이 닫힐 때 폼 입력값 초기화
-    }
-  };
-
-  // 링크 삭제 로직 (Delete - Firestore)
-  const handleDeleteLink = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, "users", "anonymous", "links", id));
-    } catch (error) {
-      console.error("Error deleting document: ", error);
-      alert("링크 삭제 중 오류가 발생했습니다.");
     }
   };
 
@@ -217,41 +193,7 @@ export default function MyLinkProfile() {
             <div className="text-center py-10 opacity-50 font-bold">등록된 링크가 없습니다. 첫 링크를 추가해 보세요!</div>
           ) : (
             links.map((link) => (
-              <div key={link.id} className="flex gap-3 items-center group relative w-full">
-                <a 
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 brutal-border brutal-shadow bg-card hover:bg-secondary transition-all p-4 md:p-5 flex items-center gap-4 text-left no-underline"
-                >
-                  {/* Favicon */}
-                  {link.icon ? (
-                    <div className="h-10 w-10 bg-background brutal-border shrink-0 flex items-center justify-center overflow-hidden">
-                      <img src={link.icon} alt={`${link.title} icon`} className="h-6 w-6 object-contain" />
-                    </div>
-                  ) : (
-                    <div className="h-10 w-10 bg-background brutal-border shrink-0 flex items-center justify-center">
-                      <LinkIcon className="h-5 w-5" />
-                    </div>
-                  )}
-                  
-                  {/* Link Title */}
-                  <span className="text-xl md:text-2xl font-bold flex-1 truncate">{link.title}</span>
-                  
-                  {/* Edit Hint Icon */}
-                  <Pencil className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-foreground" />
-                </a>
-                
-                {/* Delete Button */}
-                <Button 
-                  onClick={() => handleDeleteLink(link.id)}
-                  variant="destructive" 
-                  className="brutal-border brutal-shadow h-[72px] w-[72px] p-0 rounded-none shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex"
-                >
-                  <Trash2 className="h-7 w-7" />
-                  <span className="sr-only">삭제</span>
-                </Button>
-              </div>
+              <LinkCard key={link.id} link={link} />
             ))
           )}
         </section>
