@@ -117,7 +117,7 @@ export function LinkCard({ link }: LinkCardProps) {
 
   // 기본 렌더링 (보기 모드)
   return (
-    <div className="brutal-border brutal-shadow bg-card hover:bg-secondary transition-all p-3 md:p-4 flex items-center gap-3 md:gap-4 w-full relative group">
+    <div className="brutal-border brutal-shadow bg-card transition-all p-3 md:p-4 flex items-center gap-3 md:gap-4 w-full relative group">
       
       {/* Link Clickable Area (좌측 영역 넓게) */}
       <a 
