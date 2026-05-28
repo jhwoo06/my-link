@@ -1,6 +1,0 @@
-{
-  "installCommand": "npm install && cd my-link-app && npm install",
-  "buildCommand": "cd my-link-app && npm run build",
-  "outputDirectory": "my-link-app/.next",
-  "framework": "nextjs"
-}

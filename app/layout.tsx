@@ -1,32 +1,30 @@
-import { Geist, Geist_Mono } from "next/font/google"
+import type { Metadata } from "next";
+import "./globals.css";
+import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
+import QueryProvider from "@/components/query-provider";
 
-import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-
-const fontSans = Geist({
-  subsets: ["latin"],
-  variable: "--font-sans",
-})
-
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-})
+export const metadata: Metadata = {
+  title: "MyLink - 나만의 멀티링크 프로필",
+  description: "인플루언서와 크리에이터를 위한 단 하나의 멀티링크 서비스",
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
+      lang="ko"
+      className={cn("h-full", "antialiased", "font-sans")}
     >
-      <body>
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className="min-h-full flex flex-col bg-background text-foreground">
+        <QueryProvider>
+          {children}
+          <Toaster position="top-center" />
+        </QueryProvider>
       </body>
     </html>
-  )
+  );
 }
