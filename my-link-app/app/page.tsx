@@ -223,39 +223,46 @@ export default function MyLinkProfile() {
           {isAuthLoading ? (
             <Loader2 className="animate-spin h-5 w-5 text-gray-400" />
           ) : user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer hover:opacity-80 transition-opacity">
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt="profile" className="w-9 h-9 rounded-full border border-gray-100 shadow-sm" />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                    {profile?.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                )}
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-white rounded-xl shadow-lg border border-gray-100 p-1">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel className="flex flex-col gap-1 p-2">
-                    <span className="text-sm font-bold text-gray-900 truncate">{profile?.displayName || "사용자"}</span>
-                    <span className="text-xs font-medium text-gray-500 truncate">{user.email}</span>
-                  </DropdownMenuLabel>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator className="bg-gray-100" />
-                <DropdownMenuItem className="cursor-pointer font-medium text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus:bg-gray-50 focus:text-gray-900 p-2 rounded-md transition-colors" onClick={() => window.open(`/@${profile?.username || ""}`, '_blank')}>
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  <span>내 페이지 미리보기</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer font-medium text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus:bg-gray-50 focus:text-gray-900 p-2 rounded-md transition-colors" onClick={handleCopyLink}>
-                  <Copy className="mr-2 h-4 w-4" />
-                  <span>내 링크 복사</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-gray-100" />
-                <DropdownMenuItem className="cursor-pointer font-medium text-sm text-red-600 hover:bg-red-50 hover:text-red-700 focus:bg-red-50 focus:text-red-700 p-2 rounded-md transition-colors" onClick={handleLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>로그아웃</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <>
+              {profile?.username && (
+                <Button 
+                  className="hidden sm:flex items-center gap-2 h-9 px-4 rounded-full text-sm font-medium shadow-sm hover:opacity-90 transition-opacity"
+                  onClick={() => window.open(`/@${profile.username}`, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  내 페이지
+                </Button>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer hover:opacity-80 transition-opacity">
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="profile" className="w-9 h-9 rounded-full border border-gray-100 shadow-sm" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                      {profile?.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  )}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-white rounded-xl shadow-lg border border-gray-100 p-1">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel className="flex flex-col gap-1 p-2">
+                      <span className="text-sm font-bold text-gray-900 truncate">{profile?.displayName || "사용자"}</span>
+                      <span className="text-xs font-medium text-gray-500 truncate">{user.email}</span>
+                    </DropdownMenuLabel>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator className="bg-gray-100" />
+                  <DropdownMenuItem className="cursor-pointer font-medium text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus:bg-gray-50 focus:text-gray-900 p-2 rounded-md transition-colors" onClick={handleCopyLink}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    <span>내 링크 복사</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-100" />
+                  <DropdownMenuItem className="cursor-pointer font-medium text-sm text-red-600 hover:bg-red-50 hover:text-red-700 focus:bg-red-50 focus:text-red-700 p-2 rounded-md transition-colors" onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>로그아웃</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           ) : (
             <Button onClick={handleLogin} className="rounded-md font-medium bg-primary text-white shadow-sm hover:bg-primary/90 px-6 h-10">
               로그인
