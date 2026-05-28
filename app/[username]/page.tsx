@@ -3,6 +3,40 @@ import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { notFound } from "next/navigation";
 import { LinkItem } from "@/data/links";
 import { PublicLinkCard } from "@/components/public-link-card";
+import { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
+  const { username } = await params;
+  const decodedUsername = decodeURIComponent(username).replace('@', '');
+
+  const q = query(collection(db, "users"), where("username", "==", decodedUsername));
+  const querySnapshot = await getDocs(q);
+
+  if (querySnapshot.empty) {
+    return {
+      title: "사용자를 찾을 수 없습니다",
+    };
+  }
+
+  const userData = querySnapshot.docs[0].data();
+  const title = userData.displayName ? `${userData.displayName}의 프로필` : `@${decodedUsername}의 프로필`;
+  const description = userData.bio || "나만의 링크 모음, 마이링크에서 확인하세요.";
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "profile",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    }
+  };
+}
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
