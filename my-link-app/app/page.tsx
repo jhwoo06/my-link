@@ -270,9 +270,9 @@ export default function MyLinkProfile() {
             </Button>
           </section>
         ) : (
-          // Dashboard View (Logged In)
+          // My Page View (Logged In)
           <>
-            {/* Share Button (Dashboard only) */}
+            {/* Share Button (My Page only) */}
             <div className="w-full flex justify-end">
               <Button variant="outline" className="brutal-border brutal-shadow bg-card hover:bg-primary/50 rounded-none h-12 w-12 p-0">
                 <Share className="h-5 w-5" />
