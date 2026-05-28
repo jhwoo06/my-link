@@ -21,9 +21,10 @@ import { doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 
 interface LinkCardProps {
   link: LinkItem;
+  uid: string;
 }
 
-export function LinkCard({ link }: LinkCardProps) {
+export function LinkCard({ link, uid }: LinkCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -47,7 +48,7 @@ export function LinkCard({ link }: LinkCardProps) {
     const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
     
     try {
-      await updateDoc(doc(db, "users", "anonymous", "links", link.id), {
+      await updateDoc(doc(db, "users", uid, "links", link.id), {
         title: data.title,
         url: urlObj.toString(),
         icon: faviconUrl,
@@ -63,7 +64,7 @@ export function LinkCard({ link }: LinkCardProps) {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await deleteDoc(doc(db, "users", "anonymous", "links", link.id));
+      await deleteDoc(doc(db, "users", uid, "links", link.id));
       setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error("Error deleting document: ", error);
