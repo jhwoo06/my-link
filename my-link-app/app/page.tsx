@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +14,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Share, Plus, Loader2, ExternalLink, Copy, LogOut } from "lucide-react";
+import { Share, Plus, Loader2, ExternalLink, Copy, LogOut, BarChart2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -34,6 +36,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { useLinks } from "@/hooks/useLinks";
 
 export default function MyLinkProfile() {
+  const router = useRouter();
+  
   // 인증 상태
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -216,9 +220,9 @@ export default function MyLinkProfile() {
       
       {/* Header Area */}
       <header className="w-full flex justify-between items-center bg-white px-6 md:px-10 py-4 sticky top-0 z-50">
-        <div className="font-bold text-xl tracking-tight cursor-pointer text-primary" onClick={() => window.scrollTo(0,0)}>
+        <Link href="/" className="font-bold text-xl tracking-tight cursor-pointer text-primary hover:opacity-80 transition-opacity">
           MyLink
-        </div>
+        </Link>
         <div className="flex items-center gap-4">
           {isAuthLoading ? (
             <Loader2 className="animate-spin h-5 w-5 text-gray-400" />
@@ -251,6 +255,10 @@ export default function MyLinkProfile() {
                     </DropdownMenuLabel>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator className="bg-gray-100" />
+                  <DropdownMenuItem className="cursor-pointer font-medium text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus:bg-gray-50 focus:text-gray-900 p-2 rounded-md transition-colors" onClick={() => router.push('/stats')}>
+                    <BarChart2 className="mr-2 h-4 w-4" />
+                    <span>통계 보기</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem className="cursor-pointer font-medium text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus:bg-gray-50 focus:text-gray-900 p-2 rounded-md transition-colors" onClick={handleCopyLink}>
                     <Copy className="mr-2 h-4 w-4" />
                     <span>내 링크 복사</span>

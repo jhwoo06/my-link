@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Pencil, Trash2, Link as LinkIcon, Save, X, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Link as LinkIcon, Save, X, Loader2, MousePointerClick } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { linkSchema, LinkFormValues } from "@/lib/schemas";
@@ -127,9 +127,14 @@ export function LinkCard({ link, uid }: LinkCardProps) {
             <LinkIcon className="h-5 w-5" />
           </div>
         )}
-        
-        {/* Link Title */}
-        <span className="text-lg font-bold text-gray-900 truncate">{link.title}</span>
+        {/* Link Title and Clicks */}
+        <div className="flex flex-col min-w-0">
+          <span className="text-lg font-bold text-gray-900 truncate">{link.title}</span>
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 mt-1">
+            <MousePointerClick className="h-3.5 w-3.5" />
+            <span>{link.clicks || 0}</span>
+          </div>
+        </div>
       </a>
       
       {/* Action Buttons (직사각형 내부에 배치) */}

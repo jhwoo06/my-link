@@ -6,6 +6,7 @@ export interface LinkItem {
   title: string;   // 화면에 표시될 링크 제목
   url: string;     // 클릭 시 이동할 목적지 주소
   icon?: string;   // 링크 좌측에 표시할 아이콘 이미지 주소 (파비콘)
+  clicks?: number; // 링크 클릭 수
 }
 
 /**

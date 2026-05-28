@@ -35,6 +35,7 @@ export function useLinks(uid: string | undefined) {
         title: data.title,
         url: urlObj.toString(),
         icon: faviconUrl,
+        clicks: 0,
         createdAt: serverTimestamp()
       });
       
@@ -43,6 +44,7 @@ export function useLinks(uid: string | undefined) {
         title: data.title,
         url: urlObj.toString(),
         icon: faviconUrl,
+        clicks: 0,
       };
     },
     onSuccess: () => {
