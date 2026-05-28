@@ -82,32 +82,32 @@ export function LinkCard({ link, uid }: LinkCardProps) {
   // 수정(인라인 편집) 모드 렌더링
   if (isEditing) {
     return (
-      <form onSubmit={handleSubmit(onEditSubmit)} className="w-full brutal-border brutal-shadow bg-card p-4 md:p-5 flex flex-col gap-4">
+      <form onSubmit={handleSubmit(onEditSubmit)} className="w-full bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col gap-4">
         <div className="grid gap-2">
-          <Label htmlFor={`edit-title-${link.id}`} className="font-bold">링크 제목</Label>
+          <Label htmlFor={`edit-title-${link.id}`} className="font-semibold text-gray-700 text-sm">링크 제목</Label>
           <Input 
             id={`edit-title-${link.id}`}
             placeholder="예: 내 인스타그램" 
-            className={`brutal-border rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary ${errors.title ? "border-destructive text-destructive" : ""}`}
+            className={`rounded-md border-gray-200 h-11 focus-visible:ring-1 focus-visible:ring-primary shadow-sm ${errors.title ? "border-red-500 text-red-500" : ""}`}
             {...register("title")}
           />
-          {errors.title && <span className="text-destructive font-bold text-sm">{errors.title.message}</span>}
+          {errors.title && <span className="text-red-500 font-medium text-xs">{errors.title.message}</span>}
         </div>
         <div className="grid gap-2">
-          <Label htmlFor={`edit-url-${link.id}`} className="font-bold">URL (웹 주소)</Label>
+          <Label htmlFor={`edit-url-${link.id}`} className="font-semibold text-gray-700 text-sm">URL (웹 주소)</Label>
           <Input 
             id={`edit-url-${link.id}`}
             placeholder="https://example.com" 
-            className={`brutal-border rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary ${errors.url ? "border-destructive text-destructive" : ""}`}
+            className={`rounded-md border-gray-200 h-11 focus-visible:ring-1 focus-visible:ring-primary shadow-sm ${errors.url ? "border-red-500 text-red-500" : ""}`}
             {...register("url")}
           />
-          {errors.url && <span className="text-destructive font-bold text-sm">{errors.url.message}</span>}
+          {errors.url && <span className="text-red-500 font-medium text-xs">{errors.url.message}</span>}
         </div>
         <div className="flex gap-2 justify-end mt-2">
-          <Button type="button" variant="outline" className="brutal-border rounded-none hover:bg-secondary font-bold" onClick={cancelEditing}>
-            <X className="mr-2 h-4 w-4" /> 취소
+          <Button type="button" variant="outline" className="rounded-md h-10 border-gray-200 text-gray-600 hover:bg-gray-50 font-medium" onClick={cancelEditing}>
+            취소
           </Button>
-          <Button disabled={isSubmitting} type="submit" className="brutal-border bg-primary text-primary-foreground rounded-none font-bold">
+          <Button disabled={isSubmitting} type="submit" className="rounded-md h-10 bg-primary text-white hover:bg-primary/90 font-medium">
             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             저장
           </Button>
@@ -118,7 +118,7 @@ export function LinkCard({ link, uid }: LinkCardProps) {
 
   // 기본 렌더링 (보기 모드)
   return (
-    <div className="brutal-border brutal-shadow bg-card transition-all p-3 md:p-4 flex items-center gap-3 md:gap-4 w-full relative group">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 transition-all hover:shadow-md hover:-translate-y-0.5 p-3 md:p-4 flex items-center gap-3 md:gap-4 w-full relative group">
       
       {/* Link Clickable Area (좌측 영역 넓게) */}
       <a 
@@ -129,17 +129,17 @@ export function LinkCard({ link, uid }: LinkCardProps) {
       >
         {/* Favicon */}
         {link.icon ? (
-          <div className="h-10 w-10 bg-background brutal-border shrink-0 flex items-center justify-center overflow-hidden">
+          <div className="h-12 w-12 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100 shrink-0">
             <img src={link.icon} alt={`${link.title} icon`} className="h-6 w-6 object-contain" />
           </div>
         ) : (
-          <div className="h-10 w-10 bg-background brutal-border shrink-0 flex items-center justify-center">
+          <div className="h-12 w-12 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100 shrink-0 text-gray-400">
             <LinkIcon className="h-5 w-5" />
           </div>
         )}
         
         {/* Link Title */}
-        <span className="text-xl md:text-2xl font-bold truncate">{link.title}</span>
+        <span className="text-lg font-bold text-gray-900 truncate">{link.title}</span>
       </a>
       
       {/* Action Buttons (직사각형 내부에 배치) */}
@@ -149,11 +149,11 @@ export function LinkCard({ link, uid }: LinkCardProps) {
             e.preventDefault();
             setIsEditing(true);
           }}
-          variant="outline" 
-          className="brutal-border brutal-shadow h-10 w-10 p-0 rounded-none bg-background hover:bg-secondary hover:text-secondary-foreground transition-all"
+          variant="ghost" 
+          className="h-10 w-10 p-0 rounded-md text-gray-400 hover:text-primary hover:bg-primary/5 transition-all"
           title="수정"
         >
-          <Pencil className="h-5 w-5" />
+          <Pencil className="h-4 w-4" />
           <span className="sr-only">수정</span>
         </Button>
 
@@ -162,35 +162,35 @@ export function LinkCard({ link, uid }: LinkCardProps) {
             e.preventDefault();
             setIsDeleteDialogOpen(true);
           }}
-          variant="outline" 
-          className="brutal-border brutal-shadow h-10 w-10 p-0 rounded-none bg-background hover:bg-destructive hover:text-destructive-foreground transition-all"
+          variant="ghost" 
+          className="h-10 w-10 p-0 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"
           title="삭제"
         >
-          <Trash2 className="h-5 w-5" />
+          <Trash2 className="h-4 w-4" />
           <span className="sr-only">삭제</span>
         </Button>
       </div>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="brutal-border brutal-shadow bg-card rounded-none sm:max-w-[425px]">
+        <DialogContent className="bg-white rounded-xl shadow-xl border border-gray-100 sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-black uppercase tracking-tight">정말 삭제하시겠습니까?</DialogTitle>
+            <DialogTitle className="text-xl font-bold tracking-tight text-gray-900">링크 삭제</DialogTitle>
           </DialogHeader>
           <div className="py-4 flex flex-col gap-4">
-            <div className="brutal-border bg-secondary p-3 text-lg font-bold truncate">
+            <div className="bg-gray-50 border border-gray-100 p-3 rounded-md text-base font-medium text-gray-700 truncate">
               {link.title}
             </div>
-            <p className="text-destructive font-black text-lg animate-pulse">
-              이 작업은 되돌릴 수 없습니다.
+            <p className="text-gray-500 text-sm">
+              이 작업은 되돌릴 수 없으며 링크가 영구적으로 삭제됩니다. 계속하시겠습니까?
             </p>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" className="brutal-border brutal-shadow rounded-none text-lg font-bold h-12 bg-card hover:bg-secondary" onClick={() => setIsDeleteDialogOpen(false)}>
+          <DialogFooter className="mt-2">
+            <Button type="button" variant="outline" className="rounded-md text-sm font-medium h-10 border-gray-200 text-gray-600 hover:bg-gray-50" onClick={() => setIsDeleteDialogOpen(false)}>
               취소
             </Button>
-            <Button disabled={isDeleting} type="button" variant="destructive" className="brutal-border brutal-shadow rounded-none text-lg font-bold h-12 bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDelete}>
-              {isDeleting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Trash2 className="mr-2 h-5 w-5" />}
+            <Button disabled={isDeleting} type="button" variant="destructive" className="rounded-md text-sm font-medium h-10 bg-red-600 text-white hover:bg-red-700" onClick={handleDelete}>
+              {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
               삭제하기
             </Button>
           </DialogFooter>
