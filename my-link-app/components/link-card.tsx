@@ -111,12 +111,14 @@ export function LinkCard({ link }: LinkCardProps) {
 
   // 기본 렌더링 (보기 모드)
   return (
-    <div className="flex gap-3 items-center w-full">
+    <div className="brutal-border brutal-shadow bg-card hover:bg-secondary transition-all p-3 md:p-4 flex items-center gap-3 md:gap-4 w-full relative group">
+      
+      {/* Link Clickable Area (좌측 영역 넓게) */}
       <a 
         href={link.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex-1 brutal-border brutal-shadow bg-card hover:bg-secondary transition-all p-4 md:p-5 flex items-center gap-4 text-left no-underline"
+        className="flex-1 flex items-center gap-3 md:gap-4 no-underline min-w-0"
       >
         {/* Favicon */}
         {link.icon ? (
@@ -130,26 +132,34 @@ export function LinkCard({ link }: LinkCardProps) {
         )}
         
         {/* Link Title */}
-        <span className="text-xl md:text-2xl font-bold flex-1 truncate">{link.title}</span>
+        <span className="text-xl md:text-2xl font-bold truncate">{link.title}</span>
       </a>
       
-      {/* Action Buttons (항상 표시되도록 변경) */}
-      <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+      {/* Action Buttons (직사각형 내부에 배치) */}
+      <div className="flex gap-2 shrink-0">
         <Button 
-          onClick={() => setIsEditing(true)}
+          onClick={(e) => {
+            e.preventDefault(); // 링크 이동 방지
+            setIsEditing(true);
+          }}
           variant="outline" 
-          className="brutal-border brutal-shadow h-[40px] w-[40px] sm:h-[72px] sm:w-[72px] p-0 rounded-none bg-card hover:bg-primary/20 transition-colors"
+          className="brutal-border h-10 w-10 p-0 rounded-none bg-background hover:bg-primary/20 transition-colors"
+          title="수정"
         >
-          <Pencil className="h-5 w-5 sm:h-7 sm:w-7" />
+          <Pencil className="h-5 w-5" />
           <span className="sr-only">수정</span>
         </Button>
 
         <Button 
-          onClick={() => setIsDeleteDialogOpen(true)}
+          onClick={(e) => {
+            e.preventDefault(); // 링크 이동 방지
+            setIsDeleteDialogOpen(true);
+          }}
           variant="destructive" 
-          className="brutal-border brutal-shadow h-[40px] w-[40px] sm:h-[72px] sm:w-[72px] p-0 rounded-none bg-destructive hover:bg-destructive/90 transition-colors"
+          className="brutal-border h-10 w-10 p-0 rounded-none bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors"
+          title="삭제"
         >
-          <Trash2 className="h-5 w-5 sm:h-7 sm:w-7" />
+          <Trash2 className="h-5 w-5" />
           <span className="sr-only">삭제</span>
         </Button>
       </div>
