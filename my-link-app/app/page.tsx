@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { dummyLinks, LinkItem } from "../data/links";
+import { useState, useEffect } from "react";
+import { LinkItem } from "../data/links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,8 @@ import { Share, Pencil, Trash2, Plus, Link as LinkIcon } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { db } from "@/lib/firebase";
+import { collection, onSnapshot, addDoc, deleteDoc, doc, query, orderBy, serverTimestamp } from "firebase/firestore";
 
 // Zod 유효성 검사 스키마 정의
 const linkSchema = z.object({
@@ -36,16 +38,35 @@ type LinkFormValues = z.infer<typeof linkSchema>;
 export default function MyLinkProfile() {
   const [username, setUsername] = useState("우지헌");
   const [bio, setBio] = useState("안녕하세요! 프론트엔드 개발자입니다.");
-  const [links, setLinks] = useState<LinkItem[]>(dummyLinks);
+  const [links, setLinks] = useState<LinkItem[]>([]);
   
   // 모달 상태 관리
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // Firestore 실시간 데이터베이스 연동 (Read)
+  useEffect(() => {
+    const q = query(
+      collection(db, "users", "anonymous", "links"), 
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const linksData: LinkItem[] = [];
+      snapshot.forEach((doc) => {
+        linksData.push({ id: doc.id, ...doc.data() } as LinkItem);
+      });
+      setLinks(linksData);
+    });
+
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => unsubscribe();
+  }, []);
 
   // React Hook Form 설정
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     reset,
   } = useForm<LinkFormValues>({
     resolver: zodResolver(linkSchema),
@@ -55,24 +76,27 @@ export default function MyLinkProfile() {
     },
   });
 
-  const onSubmit = (data: LinkFormValues) => {
-    // 폼 제출 시 실행되는 로직
+  // 링크 추가 로직 (Create - Firestore)
+  const onSubmit = async (data: LinkFormValues) => {
     const urlObj = new URL(data.url.startsWith('http') ? data.url : `https://${data.url}`);
     const domain = urlObj.hostname;
     const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
     
-    const newLink: LinkItem = {
-      id: Date.now().toString(),
-      title: data.title,
-      url: urlObj.toString(),
-      icon: faviconUrl
-    };
-
-    setLinks([newLink, ...links]);
-    
-    // 모달 닫기 및 폼 초기화
-    reset();
-    setIsDialogOpen(false);
+    try {
+      await addDoc(collection(db, "users", "anonymous", "links"), {
+        title: data.title,
+        url: urlObj.toString(),
+        icon: faviconUrl,
+        createdAt: serverTimestamp()
+      });
+      
+      // 모달 닫기 및 폼 초기화
+      reset();
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error("Error adding document: ", error);
+      alert("링크 추가 중 오류가 발생했습니다.");
+    }
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -82,8 +106,14 @@ export default function MyLinkProfile() {
     }
   };
 
-  const handleDeleteLink = (id: string) => {
-    setLinks(links.filter(link => link.id !== id));
+  // 링크 삭제 로직 (Delete - Firestore)
+  const handleDeleteLink = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "users", "anonymous", "links", id));
+    } catch (error) {
+      console.error("Error deleting document: ", error);
+      alert("링크 삭제 중 오류가 발생했습니다.");
+    }
   };
 
   return (
@@ -164,8 +194,8 @@ export default function MyLinkProfile() {
                   <Button type="button" variant="outline" className="brutal-border brutal-shadow rounded-none text-lg font-bold h-12 bg-card hover:bg-secondary" onClick={() => handleOpenChange(false)}>
                     취소
                   </Button>
-                  <Button type="submit" className="brutal-border brutal-shadow bg-primary text-primary-foreground rounded-none text-lg font-bold h-12">
-                    추가하기
+                  <Button disabled={isSubmitting} type="submit" className="brutal-border brutal-shadow bg-primary text-primary-foreground rounded-none text-lg font-bold h-12">
+                    {isSubmitting ? "추가 중..." : "추가하기"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -173,43 +203,47 @@ export default function MyLinkProfile() {
           </Dialog>
 
           {/* Links List */}
-          {links.map((link) => (
-            <div key={link.id} className="flex gap-3 items-center group relative w-full">
-              <a 
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 brutal-border brutal-shadow bg-card hover:bg-secondary transition-all p-4 md:p-5 flex items-center gap-4 text-left no-underline"
-              >
-                {/* Favicon */}
-                {link.icon ? (
-                  <div className="h-10 w-10 bg-background brutal-border shrink-0 flex items-center justify-center overflow-hidden">
-                    <img src={link.icon} alt={`${link.title} icon`} className="h-6 w-6 object-contain" />
-                  </div>
-                ) : (
-                  <div className="h-10 w-10 bg-background brutal-border shrink-0 flex items-center justify-center">
-                    <LinkIcon className="h-5 w-5" />
-                  </div>
-                )}
+          {links.length === 0 ? (
+            <div className="text-center py-10 opacity-50 font-bold">등록된 링크가 없습니다. 첫 링크를 추가해 보세요!</div>
+          ) : (
+            links.map((link) => (
+              <div key={link.id} className="flex gap-3 items-center group relative w-full">
+                <a 
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 brutal-border brutal-shadow bg-card hover:bg-secondary transition-all p-4 md:p-5 flex items-center gap-4 text-left no-underline"
+                >
+                  {/* Favicon */}
+                  {link.icon ? (
+                    <div className="h-10 w-10 bg-background brutal-border shrink-0 flex items-center justify-center overflow-hidden">
+                      <img src={link.icon} alt={`${link.title} icon`} className="h-6 w-6 object-contain" />
+                    </div>
+                  ) : (
+                    <div className="h-10 w-10 bg-background brutal-border shrink-0 flex items-center justify-center">
+                      <LinkIcon className="h-5 w-5" />
+                    </div>
+                  )}
+                  
+                  {/* Link Title */}
+                  <span className="text-xl md:text-2xl font-bold flex-1 truncate">{link.title}</span>
+                  
+                  {/* Edit Hint Icon */}
+                  <Pencil className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-foreground" />
+                </a>
                 
-                {/* Link Title */}
-                <span className="text-xl md:text-2xl font-bold flex-1 truncate">{link.title}</span>
-                
-                {/* Edit Hint Icon */}
-                <Pencil className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-foreground" />
-              </a>
-              
-              {/* Delete Button */}
-              <Button 
-                onClick={() => handleDeleteLink(link.id)}
-                variant="destructive" 
-                className="brutal-border brutal-shadow h-[72px] w-[72px] p-0 rounded-none shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex"
-              >
-                <Trash2 className="h-7 w-7" />
-                <span className="sr-only">삭제</span>
-              </Button>
-            </div>
-          ))}
+                {/* Delete Button */}
+                <Button 
+                  onClick={() => handleDeleteLink(link.id)}
+                  variant="destructive" 
+                  className="brutal-border brutal-shadow h-[72px] w-[72px] p-0 rounded-none shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex"
+                >
+                  <Trash2 className="h-7 w-7" />
+                  <span className="sr-only">삭제</span>
+                </Button>
+              </div>
+            ))
+          )}
         </section>
 
         {/* Footer */}
