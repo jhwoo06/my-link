@@ -14,6 +14,24 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Share, Pencil, Trash2, Plus, Link as LinkIcon } from "lucide-react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+// Zod 유효성 검사 스키마 정의
+const linkSchema = z.object({
+  title: z.string().min(1, { message: "링크 제목을 입력해주세요." }),
+  url: z.string().min(1, { message: "웹 주소(URL)를 입력해주세요." }).refine(val => {
+    try {
+      const urlObj = new URL(val.startsWith('http') ? val : `https://${val}`);
+      return urlObj.hostname.includes('.');
+    } catch {
+      return false;
+    }
+  }, { message: "올바른 웹 주소 형식이 아닙니다. (예: example.com)" })
+});
+
+type LinkFormValues = z.infer<typeof linkSchema>;
 
 export default function MyLinkProfile() {
   const [username, setUsername] = useState("우지헌");
@@ -22,34 +40,45 @@ export default function MyLinkProfile() {
   
   // 모달 상태 관리
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newUrl, setNewUrl] = useState("");
 
-  const handleAddLink = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim() || !newUrl.trim()) return;
+  // React Hook Form 설정
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<LinkFormValues>({
+    resolver: zodResolver(linkSchema),
+    defaultValues: {
+      title: "",
+      url: "",
+    },
+  });
 
-    try {
-      // url에서 도메인 추출하여 파비콘 생성
-      const urlObj = new URL(newUrl.startsWith('http') ? newUrl : `https://${newUrl}`);
-      const domain = urlObj.hostname;
-      const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-      
-      const newLink: LinkItem = {
-        id: Date.now().toString(),
-        title: newTitle,
-        url: urlObj.toString(),
-        icon: faviconUrl
-      };
+  const onSubmit = (data: LinkFormValues) => {
+    // 폼 제출 시 실행되는 로직
+    const urlObj = new URL(data.url.startsWith('http') ? data.url : `https://${data.url}`);
+    const domain = urlObj.hostname;
+    const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+    
+    const newLink: LinkItem = {
+      id: Date.now().toString(),
+      title: data.title,
+      url: urlObj.toString(),
+      icon: faviconUrl
+    };
 
-      setLinks([newLink, ...links]);
-      
-      // 폼 초기화 및 모달 닫기
-      setNewTitle("");
-      setNewUrl("");
-      setIsDialogOpen(false);
-    } catch (error) {
-      alert("올바른 URL 형식을 입력해주세요.");
+    setLinks([newLink, ...links]);
+    
+    // 모달 닫기 및 폼 초기화
+    reset();
+    setIsDialogOpen(false);
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      reset(); // 모달이 닫힐 때 폼 입력값 초기화
     }
   };
 
@@ -94,7 +123,7 @@ export default function MyLinkProfile() {
         <section className="w-full flex flex-col gap-6 mt-8">
           
           {/* Add Link Button (Top & Redesigned) */}
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
             <DialogTrigger render={
               <Button 
                 className="w-full h-20 brutal-border brutal-shadow bg-primary hover:bg-primary/90 text-primary-foreground text-2xl font-black rounded-none border-dashed hover:border-solid transition-all relative overflow-hidden group mb-4"
@@ -110,32 +139,29 @@ export default function MyLinkProfile() {
               <DialogHeader>
                 <DialogTitle className="text-3xl font-black uppercase tracking-tight">새 링크 추가</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleAddLink} className="grid gap-6 py-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="title" className="text-lg font-bold">링크 제목</Label>
                   <Input 
                     id="title" 
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
                     placeholder="예: 내 인스타그램" 
-                    className="brutal-border rounded-none h-12 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary"
-                    required
+                    className={`brutal-border rounded-none h-12 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary ${errors.title ? "border-destructive text-destructive" : ""}`}
+                    {...register("title")}
                   />
+                  {errors.title && <span className="text-destructive font-bold text-sm">{errors.title.message}</span>}
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="url" className="text-lg font-bold">URL (웹 주소)</Label>
                   <Input 
                     id="url" 
-                    type="url"
-                    value={newUrl}
-                    onChange={(e) => setNewUrl(e.target.value)}
                     placeholder="https://example.com" 
-                    className="brutal-border rounded-none h-12 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary"
-                    required
+                    className={`brutal-border rounded-none h-12 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary ${errors.url ? "border-destructive text-destructive" : ""}`}
+                    {...register("url")}
                   />
+                  {errors.url && <span className="text-destructive font-bold text-sm">{errors.url.message}</span>}
                 </div>
                 <DialogFooter className="mt-4">
-                  <Button type="button" variant="outline" className="brutal-border brutal-shadow rounded-none text-lg font-bold h-12 bg-card hover:bg-secondary" onClick={() => setIsDialogOpen(false)}>
+                  <Button type="button" variant="outline" className="brutal-border brutal-shadow rounded-none text-lg font-bold h-12 bg-card hover:bg-secondary" onClick={() => handleOpenChange(false)}>
                     취소
                   </Button>
                   <Button type="submit" className="brutal-border brutal-shadow bg-primary text-primary-foreground rounded-none text-lg font-bold h-12">
