@@ -161,8 +161,8 @@ export function LinkCard({ link }: LinkCardProps) {
             e.preventDefault();
             setIsDeleteDialogOpen(true);
           }}
-          variant="destructive" 
-          className="brutal-border brutal-shadow h-10 w-10 p-0 rounded-none bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all"
+          variant="outline" 
+          className="brutal-border brutal-shadow h-10 w-10 p-0 rounded-none bg-background hover:bg-destructive hover:text-destructive-foreground transition-all"
           title="삭제"
         >
           <Trash2 className="h-5 w-5" />
