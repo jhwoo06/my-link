@@ -182,8 +182,8 @@ export function LinkCard({ link }: LinkCardProps) {
             <Button type="button" variant="outline" className="brutal-border brutal-shadow rounded-none text-lg font-bold h-12 bg-card hover:bg-secondary" onClick={() => setIsDeleteDialogOpen(false)}>
               취소
             </Button>
-            <Button type="button" variant="destructive" className="brutal-border brutal-shadow rounded-none text-lg font-bold h-12" onClick={handleDelete}>
-              삭제하기
+            <Button type="button" variant="destructive" className="brutal-border brutal-shadow rounded-none text-lg font-bold h-12 bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDelete}>
+              <Trash2 className="mr-2 h-5 w-5" /> 삭제하기
             </Button>
           </DialogFooter>
         </DialogContent>
