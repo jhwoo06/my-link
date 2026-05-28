@@ -29,7 +29,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { db, auth } from "@/lib/firebase";
 import { collection, query, getDocs, where } from "firebase/firestore";
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, User } from "firebase/auth";
+import { onAuthStateChanged, signInWithPopup, signInWithRedirect, GoogleAuthProvider, signOut, User } from "firebase/auth";
 import { linkSchema, LinkFormValues } from "@/lib/schemas";
 import { LinkCard } from "@/components/link-card";
 import { useProfile } from "@/hooks/useProfile";
@@ -75,7 +75,14 @@ export default function MyLinkProfile() {
   const handleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // 모바일 환경(또는 인앱 브라우저)에서는 팝업 및 세션 스토리지 접근이 차단되는 경우가 많아 리다이렉트 방식을 사용합니다.
+        await signInWithRedirect(auth, provider);
+      } else {
+        await signInWithPopup(auth, provider);
+      }
     } catch (error: any) {
       // 사용자가 팝업을 닫았거나 중복 요청이 취소된 경우는 무시합니다.
       if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
