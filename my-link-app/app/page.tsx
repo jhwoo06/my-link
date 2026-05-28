@@ -13,7 +13,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Share, Pencil, Plus } from "lucide-react";
+import { Share, Pencil, Plus, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { db } from "@/lib/firebase";
@@ -176,7 +176,8 @@ export default function MyLinkProfile() {
                     취소
                   </Button>
                   <Button disabled={isSubmitting} type="submit" className="brutal-border brutal-shadow bg-primary text-primary-foreground rounded-none text-lg font-bold h-12">
-                    {isSubmitting ? "추가 중..." : "추가하기"}
+                    {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Plus className="mr-2 h-5 w-5" />}
+                    추가하기
                   </Button>
                 </DialogFooter>
               </form>
