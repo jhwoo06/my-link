@@ -49,72 +49,52 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --background: oklch(0.97 0.05 90); /* 크리미한 아이보리/옐로우 톤 배경 */
+  --foreground: oklch(0.1 0 0); /* 강렬한 블랙 */
+  --card: oklch(1 0 0); /* 카드 배경 화이트 */
+  --card-foreground: oklch(0.1 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.488 0.243 264.376);
-  --primary-foreground: oklch(0.97 0.014 254.604);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.546 0.245 262.881);
-  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --popover-foreground: oklch(0.1 0 0);
+  
+  /* Neobrutalism 포인트 컬러 */
+  --primary: oklch(0.75 0.15 85); /* Vibrant Yellow */
+  --primary-foreground: oklch(0.1 0 0);
+  
+  --secondary: oklch(0.85 0.12 210); /* Vibrant Blue/Cyan */
+  --secondary-foreground: oklch(0.1 0 0);
+  
+  --muted: oklch(0.9 0 0);
+  --muted-foreground: oklch(0.4 0 0);
+  
+  --accent: oklch(0.8 0.18 340); /* Vibrant Pink */
+  --accent-foreground: oklch(0.1 0 0);
+  
+  --destructive: oklch(0.6 0.2 25);
+  --border: oklch(0.1 0 0); /* 두꺼운 블랙 보더를 위한 컬러 */
+  --input: oklch(0.1 0 0);
+  --ring: oklch(0.1 0 0);
+  --radius: 0rem; /* 브루탈리즘 특유의 직각 디자인 */
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.424 0.199 265.638);
-  --primary-foreground: oklch(0.97 0.014 254.604);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.623 0.214 259.815);
-  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0.15 0 0);
+  --foreground: oklch(0.97 0.05 90);
+  --card: oklch(0.2 0 0);
+  --card-foreground: oklch(0.97 0.05 90);
+  --popover: oklch(0.2 0 0);
+  --popover-foreground: oklch(0.97 0.05 90);
+  --primary: oklch(0.75 0.15 85);
+  --primary-foreground: oklch(0.1 0 0);
+  --secondary: oklch(0.85 0.12 210);
+  --secondary-foreground: oklch(0.1 0 0);
+  --muted: oklch(0.3 0 0);
+  --muted-foreground: oklch(0.7 0 0);
+  --accent: oklch(0.8 0.18 340);
+  --accent-foreground: oklch(0.1 0 0);
+  --destructive: oklch(0.6 0.2 25);
+  --border: oklch(0.97 0.05 90);
+  --input: oklch(0.97 0.05 90);
+  --ring: oklch(0.97 0.05 90);
 }
 
 @layer base {
@@ -126,5 +106,31 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .brutal-border {
+    @apply border-4 border-foreground;
+  }
+  
+  .brutal-shadow {
+    box-shadow: 4px 4px 0px 0px var(--foreground);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  
+  .brutal-shadow:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px 0px var(--foreground);
+  }
+  
+  .brutal-shadow:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px 0px var(--foreground);
+  }
+
+  .brutal-card {
+    @apply border-4 border-foreground bg-card;
+    box-shadow: 4px 4px 0px 0px var(--foreground);
   }
 }
