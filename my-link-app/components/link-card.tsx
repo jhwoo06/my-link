@@ -26,6 +26,7 @@ interface LinkCardProps {
 export function LinkCard({ link }: LinkCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     register,
@@ -59,12 +60,15 @@ export function LinkCard({ link }: LinkCardProps) {
   };
 
   const handleDelete = async () => {
+    setIsDeleting(true);
     try {
       await deleteDoc(doc(db, "users", "anonymous", "links", link.id));
       setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error("Error deleting document: ", error);
       alert("링크 삭제 중 오류가 발생했습니다.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -182,8 +186,8 @@ export function LinkCard({ link }: LinkCardProps) {
             <Button type="button" variant="outline" className="brutal-border brutal-shadow rounded-none text-lg font-bold h-12 bg-card hover:bg-secondary" onClick={() => setIsDeleteDialogOpen(false)}>
               취소
             </Button>
-            <Button type="button" variant="destructive" className="brutal-border brutal-shadow rounded-none text-lg font-bold h-12 bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDelete}>
-              <Trash2 className="mr-2 h-5 w-5" /> 삭제하기
+            <Button disabled={isDeleting} type="button" variant="destructive" className="brutal-border brutal-shadow rounded-none text-lg font-bold h-12 bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDelete}>
+              <Trash2 className="mr-2 h-5 w-5" /> {isDeleting ? "삭제 중..." : "삭제하기"}
             </Button>
           </DialogFooter>
         </DialogContent>
