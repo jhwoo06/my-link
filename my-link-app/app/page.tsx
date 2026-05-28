@@ -39,6 +39,7 @@ export default function MyLinkProfile() {
   const [username, setUsername] = useState("우지헌");
   const [bio, setBio] = useState("안녕하세요! 프론트엔드 개발자입니다.");
   const [links, setLinks] = useState<LinkItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   // 모달 상태 관리
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -56,6 +57,10 @@ export default function MyLinkProfile() {
         linksData.push({ id: doc.id, ...doc.data() } as LinkItem);
       });
       setLinks(linksData);
+      setIsLoading(false); // 데이터 수신 완료 후 로딩 해제
+    }, (error) => {
+      console.error("Error fetching links: ", error);
+      setIsLoading(false);
     });
 
     // 컴포넌트 언마운트 시 구독 해제
@@ -203,7 +208,12 @@ export default function MyLinkProfile() {
           </Dialog>
 
           {/* Links List */}
-          {links.length === 0 ? (
+          {isLoading ? (
+            <div className="w-full flex flex-col items-center justify-center py-12 gap-4 brutal-border brutal-shadow bg-card">
+              <div className="h-10 w-10 border-4 border-foreground border-t-primary rounded-full animate-spin"></div>
+              <p className="font-black text-lg uppercase tracking-widest animate-pulse">Loading Links...</p>
+            </div>
+          ) : links.length === 0 ? (
             <div className="text-center py-10 opacity-50 font-bold">등록된 링크가 없습니다. 첫 링크를 추가해 보세요!</div>
           ) : (
             links.map((link) => (
