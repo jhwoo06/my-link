@@ -1,4 +1,4 @@
-build: UI 컴포넌트 개발을 위한 의존성 패키지 추가
+chore: Vercel 빌드 설정 추가 (my-link-app 서브디렉토리 기준)
 
-- @base-ui/react, class-variance-authority, clsx, tailwind-merge 패키지 설치
-- package.json 및 package-lock.json 업데이트
+- vercel.json 생성: installCommand, buildCommand, outputDirectory를 my-link-app 하위로 지정
+- Vercel이 루트 package.json 대신 my-link-app/package.json의 의존성을 설치하도록 설정
