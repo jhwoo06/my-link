@@ -174,7 +174,7 @@ export function LandingPage({ handleLogin }: LandingPageProps) {
             <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mb-2">
               <TrendingUp className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900">방문자 통계 (예정)</h3>
+            <h3 className="text-xl font-bold text-gray-900">방문자 통계</h3>
             <p className="text-gray-500 font-medium leading-relaxed">
               누가 어떤 링크를 얼마나 클릭했는지 분석하고,
               더 나은 프로필을 위한 인사이트를 얻으세요.

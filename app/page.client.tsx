@@ -62,51 +62,43 @@ export default function MyLinkProfile() {
   // 모달 상태 관리
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // 인증 상태 리스너 및 리다이렉트 결과 처리
+  // 인증 상태 리스너 및 초기화
   useEffect(() => {
-    let unsubscribe: () => void;
-
-    const initAuth = async () => {
-      try {
-        // 리다이렉트로 돌아왔을 때 로그인 결과를 먼저 처리 (완료될 때까지 대기)
-        await getRedirectResult(auth);
-      } catch (error) {
-        console.error("Redirect login error:", error);
-      }
-      
-      // 리다이렉트 결과 처리가 끝나면 상태 리스너 등록
-      unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-        setUser(currentUser);
-        setIsAuthLoading(false);
-      });
-    };
-    
-    initAuth();
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsAuthLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
   // 로그인 핸들러
   const handleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      
-      if (isMobile) {
-        // 모바일 환경(또는 인앱 브라우저)에서는 팝업 및 세션 스토리지 접근이 차단되는 경우가 많아 리다이렉트 방식을 사용합니다.
-        await signInWithRedirect(auth, provider);
-      } else {
-        await signInWithPopup(auth, provider);
-      }
+      // 모바일 Safari의 ITP(추적 방지)나 인앱 브라우저에서 리다이렉트 시 세션이 소실되어
+      // 무한히 랜딩 페이지로 돌아오는 버그를 방지하고자 다시 팝업 방식을 사용합니다.
+      await signInWithPopup(auth, provider);
     } catch (error: any) {
-      // 사용자가 팝업을 닫았거나 중복 요청이 취소된 경우는 무시합니다.
+      console.error("Login failed:", error);
+      
+      // 사용자가 팝업을 닫은 경우 무시
       if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
-        console.log("Login popup closed or cancelled.");
         return;
       }
-      console.error("Login failed:", error);
+      
+      // 모바일 스토리지 파티셔닝 / 인앱 브라우저 에러 감지
+      if (
+        error.message?.includes('missing initial state') || 
+        error.message?.includes('storage-partitioned') ||
+        error.code === 'auth/web-storage-unsupported'
+      ) {
+        toast.error("현재 브라우저에서는 구글 로그인이 제한됩니다.", {
+          description: "우측 상단 메뉴에서 '기본 브라우저(Safari/Chrome)로 열기'를 선택하시거나, 시크릿 모드를 해제해 주세요.",
+          duration: 7000,
+        });
+        return;
+      }
+
       toast.error("로그인 중 오류가 발생했습니다.");
     }
   };
