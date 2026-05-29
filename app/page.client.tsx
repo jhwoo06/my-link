@@ -29,7 +29,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { db, auth } from "@/lib/firebase";
 import { collection, query, getDocs, where } from "firebase/firestore";
-import { onAuthStateChanged, signInWithPopup, signInWithRedirect, GoogleAuthProvider, signOut, User } from "firebase/auth";
+import { onAuthStateChanged, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, User } from "firebase/auth";
 import { linkSchema, LinkFormValues } from "@/lib/schemas";
 import { LinkCard } from "@/components/link-card";
 import { useProfile } from "@/hooks/useProfile";
@@ -62,13 +62,30 @@ export default function MyLinkProfile() {
   // 모달 상태 관리
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // 인증 상태 리스너
+  // 인증 상태 리스너 및 리다이렉트 결과 처리
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsAuthLoading(false);
-    });
-    return () => unsubscribe();
+    let unsubscribe: () => void;
+
+    const initAuth = async () => {
+      try {
+        // 리다이렉트로 돌아왔을 때 로그인 결과를 먼저 처리 (완료될 때까지 대기)
+        await getRedirectResult(auth);
+      } catch (error) {
+        console.error("Redirect login error:", error);
+      }
+      
+      // 리다이렉트 결과 처리가 끝나면 상태 리스너 등록
+      unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+        setIsAuthLoading(false);
+      });
+    };
+    
+    initAuth();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   // 로그인 핸들러
